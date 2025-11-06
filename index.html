@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark"> <!-- Define o Dark Mode como padrão -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NuvemCore - Protótipo Final</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Fonte Inter (Google Fonts) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        // Configuração do Tailwind para os temas e cores M3
+        tailwind.config = {
+            darkMode: 'class', // Habilita o dark mode baseado em classe
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        // Cores do Material 3 (Light Mode)
+                        'm3-light-background': '#FFFBFE',
+                        'm3-light-surface': '#FFFBFE', // Fundo principal
+                        'm3-light-surface-container': '#F3EDF7', // Cards, Sidebar
+                        'm3-light-surface-container-high': '#EADDFF',
+                        'm3-light-primary': '#6750A4', // Botões principais
+                        'm3-light-on-primary': '#FFFFFF',
+                        'm3-light-outline': '#79747E', // Bordas
+                        'm3-light-text-primary': '#1D1B20', // Texto principal
+                        'm3-light-text-secondary': '#49454F', // Texto secundário
+                        
+                        // Cores do Material 3 (Dark Mode)
+                        'm3-dark-background': '#141218',
+                        'm3-dark-surface': '#141218', // Fundo principal
+                        'm3-dark-surface-container': '#211F26', // Cards, Sidebar
+                        'm3-dark-surface-container-high': '#36343B',
+                        'm3-dark-primary': '#D0BCFF', // Botões principais
+                        'm3-dark-on-primary': '#381E72',
+                        'm3-dark-outline': '#938F99', // Bordas
+                        'm3-dark-text-primary': '#E6E1E5', // Texto principal
+                        'm3-dark-text-secondary': '#CAC4D0', // Texto secundário
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* --- Estilos Adicionais --- */
+
+        /* Lógica de exibição de tela */
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { @apply bg-m3-light-outline dark:bg-m3-dark-outline rounded-full; }
+        ::-webkit-scrollbar-thumb:hover { @apply bg-m3-light-text-secondary dark:bg-m3-dark-text-secondary; }
+        ::-webkit-scrollbar-track { @apply bg-m3-light-surface-container dark:bg-m3-dark-surface-container; }
+        
+        /* Estilo do Toggle Switch */
+        .toggle-bg:after {
+            content: '';
+            @apply absolute top-0.5 left-0.5 bg-white border border-gray-300 rounded-full h-5 w-5 transition-all duration-300;
+        }
+        input:checked + .toggle-bg {
+            @apply bg-m3-light-primary dark:bg-m3-dark-primary;
+        }
+        input:checked + .toggle-bg:after {
+            @apply translate-x-full border-white;
+        }
+
+        /* Estilo para Dropdown (Select) */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25em 1.25em;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23938F99' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        }
+        html:not(.dark) select {
+             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2379747E' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        }
+
+    </style>
+</head>
+<body class="bg-m3-light-background dark:bg-m3-dark-background text-m3-light-text-primary dark:text-m3-dark-text-primary antialiased">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- ======================= -->
+        <!-- MENU LATERAL (SIDEBAR)  -->
+        <!-- ======================= -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden" aria-hidden="true"></div>
+
+        <aside id="sidebar" 
+               class="fixed lg:static z-40 w-64 h-full bg-m3-light-surface-container dark:bg-m3-dark-surface-container flex flex-col flex-shrink-0
+                      transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+            
+            <!-- Logo -->
+            <div class="h-16 flex items-center justify-center px-4 border-b border-m3-light-outline/30 dark:border-m3-dark-outline/30">
+                <i data-lucide="cloudy" class="w-7 h-7 text-m3-light-primary dark:text-m3-dark-primary"></i>
+                <h1 class="text-2xl font-bold ml-2 transition-opacity duration-200" id="sidebar-logo">NuvemCore</h1>
+            </div>
+
+            <!-- Botão Adicionar Serviço -->
+            <div class="px-4 py-4">
+                 <button data-navlink="screen-add-service"
+                         class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full
+                                bg-m3-light-primary dark:bg-m3-dark-primary 
+                                text-m3-light-on-primary dark:text-m3-dark-on-primary 
+                                font-medium hover:opacity-90 transition-all duration-200 shadow-md">
+                    <i data-lucide="plus" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="transition-opacity duration-200" id="sidebar-add-text">Adicionar Serviço</span>
+                 </button>
+            </div>
+
+            <!-- Links de Navegação -->
+            <nav class="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto">
+                <a href="#" data-navlink="screen-dashboard" class="sidebar-link active flex items-center gap-3 px-4 py-2.5 rounded-full 
+                                 text-m3-light-text-secondary dark:text-m3-dark-text-secondary
+                                 hover:bg-m3-light-surface-container-high dark:hover:bg-m3-dark-surface-container-high 
+                                 hover:text-m3-light-text-primary dark:hover:text-m3-dark-text-primary 
+                                 transition-colors duration-200">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="transition-opacity duration-200" id="sidebar-link-text-1">Dashboard</span>
+                </a>
+                <a href="#" data-navlink="screen-service-api" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-full 
+                                 text-m3-light-text-secondary dark:text-m3-dark-text-secondary
+                                 hover:bg-m3-light-surface-container-high dark:hover:bg-m3-dark-surface-container-high 
+                                 hover:text-m3-light-text-primary dark:hover:text-m3-dark-text-primary 
+                                 transition-colors duration-200">
+                    <i data-lucide="cloud" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="transition-opacity duration-200" id="sidebar-link-text-2">Serviços</span>
+                </a>
+                <a href="#" data-navlink="screen-costs" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-full 
+                                 text-m3-light-text-secondary dark:text-m3-dark-text-secondary
+                                 hover:bg-m3-light-surface-container-high dark:hover:bg-m3-dark-surface-container-high 
+                                 hover:text-m3-light-text-primary dark:hover:text-m3-dark-text-primary 
+                                 transition-colors duration-200">
+                    <i data-lucide="dollar-sign" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="transition-opacity duration-200" id="sidebar-link-text-3">Custos e Relatórios</span>
+                </a>
+                <a href="#" data-navlink="screen-settings" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-full 
+                                 text-m3-light-text-secondary dark:text-m3-dark-text-secondary
+                                 hover:bg-m3-light-surface-container-high dark:hover:bg-m3-dark-surface-container-high 
+                                 hover:text-m3-light-text-primary dark:hover:text-m3-dark-text-primary 
+                                 transition-colors duration-200">
+                    <i data-lucide="settings" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="transition-opacity duration-200" id="sidebar-link-text-4">Configurações</span>
+                </a>
+                <a href="#" data-navlink="screen-support" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-full 
+                                 text-m3-light-text-secondary dark:text-m3-dark-text-secondary
+                                 hover:bg-m3-light-surface-container-high dark:hover:bg-mObs-dark-surface-container-high 
+                                 hover:text-m3-light-text-primary dark:hover:text-m3-dark-text-primary 
+                                 transition-colors duration-200">
+                    <i data-lucide="life-buoy" class="w-5 h-5 flex-shrink-0"></i>
+                    <span class="transition-opacity duration-200" id="sidebar-link-text-5">Suporte</span>
+                </a>
+            </nav>
+            
+            <!-- Slogan e Botão de Colapso -->
+            <div class="px-4 py-4 mt-auto border-t border-m3-light-outline/30 dark:border-m3-dark-outline/30">
+                 <p class="text-xs text-m3-light-text-secondary dark:text-m3-dark-text-secondary text-center transition-opacity duration-200" id="sidebar-slogan">
+                    'Controle total. Orquestre, gerencie e escale seus projetos.'
+                 </p>
+                 <button id="sidebar-toggle" class="hidden lg:flex w-full items-center justify-center gap-3 px-4 py-2 mt-2 rounded-full
+                                 text-m3-light-text-secondary dark:text-m3-dark-text-secondary
+                                 hover:bg-m3-light-surface-container-high dark:hover:bg-m3-dark-surface-container-high 
+                                 transition-colors duration-200">
+                    <i data-lucide="chevron-left" class="w-5 h-5" id="sidebar-toggle-icon"></i>
+                    <span class="transition-opacity duration-200" id="sidebar-toggle-text">Recolher</span>
+                 </button>
+            </div>
+        </aside>
+
+        <!-- ======================= -->
+        <!--   CONTEÚDO PRINCIPAL    -->
+        <!-- ======================= -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            
+            <!-- Barra Superior (Header) -->
+            <header class="h-16 bg-m3-light-surface dark:bg-m3-dark-surface border-b border-m3-light-outline/30 dark:border-m3-dark-outline/30 flex items-center justify-between px-4 sm:px-6 flex-shrink-0">
+                
+                <div class="flex items-center gap-2">
+                    <button id="sidebar-open-btn" class="lg:hidden p-2 rounded-full text-m3-light-text-secondary dark:text-m3-dark-text-secondary hover:bg-m3-light-surface-container dark:hover:bg-m3-dark-surface-container">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    
+                    <div class="relative hidden sm:block">
+                        <i data-lucide="search" class="w-5 h-5 text-m3-light-text-secondary dark:text-m3-dark-text-secondary absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" placeholder="Buscar..." 
+                               class="w-full max-w-lg h-10 pl-10 pr-4 bg-m3-light-surface-container dark:bg-m3-dark-surface-container 
+                                      rounded-full text-sm border border-transparent 
+                                      focus:outline-none focus:ring-2 focus:ring-m3-light-primary dark:focus:ring-m3-dark-primary">
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <button class="sm:hidden p-2 rounded-full text-m3-light-text-secondary dark:text-m3-dark-text-secondary hover:bg-m3-light-surface-container dark:hover:bg-m3-dark-surface-container">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </button>
+                    <button class="p-2 rounded-full text-m3-light-text-secondary dark:text-m3-dark-text-secondary hover:bg-m3-light-surface-container dark:hover:bg-m3-dark-surface-container">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                    </button>
+                    <button class="w-8 h-8 rounded-full bg-pink-500 text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                        M
+                    </button>
+                </div>
+            </header>
+
+            <!-- Área de Conteúdo (Telas) -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8" id="main-content">
+                
+                <!-- ===================================== -->
+                <!-- TELA 1: DASHBOARD PRINCIPAL (Ativa)   -->
+                <!-- ===================================== -->
+                <section id="screen-dashboard" class="page-content active space-y-6">
+                    <h2 class="text-3xl font-semibold">Dashboard Principal</h2>
+                    
+                    <!-- Seção 1 (KPIs) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-6 rounded-2xl shadow-sm">
+                            <h3 class="text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Custo Atual (Mês)</h3>
+                            <p class="text-3xl font-bold mt-2">R$ 4.850,00</p>
+                        </div>
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-6 rounded-2xl shadow-sm">
+                            <h3 class="text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Custo Projetado</h3>
+                            <p class="text-3xl font-bold mt-2">R$ 5.100,00</p>
+                        </div>
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-6 rounded-2xl shadow-sm sm:col-span-2 lg:col-span-1">
+                            <h3 class="text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Serviços Online</h3>
+                            <p class="text-3xl font-bold mt-2">3 / 3</p>
+                        </div>
+                    </div>
+
+                    <!-- Seção 2 (Gráficos) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                        <div class="lg:col-span-3 bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px] sm:min-h-[400px]">
+                            <h3 class="text-lg font-semibold mb-4">Visão Geral de Custos (30 dias)</h3>
+                            <div class="h-64 sm:h-80 w-full">
+                                <canvas id="lineChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px] sm:min-h-[400px] flex flex-col items-center">
+                            <h3 class="text-lg font-semibold mb-4">Uso de Recursos</h3>
+                            <div class="h-64 sm:h-80 w-full max-w-xs">
+                                <canvas id="donutChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Seção 3 (Tabela - CORRIGIDA) -->
+                    <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container rounded-2xl shadow-sm overflow-hidden">
+                        <h3 class="text-lg font-semibold p-4 sm:p-6">Status dos Serviços</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left min-w-[600px]">
+                                <thead class="border-b border-t border-m3-light-outline/30 dark:border-m3-dark-outline/30">
+                                    <tr>
+                                        <th class="px-6 py-3 text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Nome do Serviço</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Status</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-m3-light-outline/30 dark:divide-m3-dark-outline/30">
+                                    <tr>
+                                        <td class="px-6 py-4 font-medium">API de Pagamentos</td>
+                                        <td class="px-6 py-4">
+                                            <span class="inline-flex items-center gap-2 font-medium text-green-500">
+                                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                                Online
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <!-- REQUISITO 2: Leva para Tela 2 -->
+                                            <button data-navlink="screen-service-api" 
+                                                    class="bg-m3-light-primary dark:bg-m3-dark-primary text-m3-light-on-primary dark:text-m3-dark-on-primary
+                                                           px-4 py-2 text-sm font-medium rounded-full hover:opacity-90 transition-opacity">Gerenciar</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 font-medium">Banco de Dados (Clientes)</td>
+                                        <td class="px-6 py-4">
+                                            <span class="inline-flex items-center gap-2 font-medium text-green-500">
+                                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                                Online
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <!-- REQUISITO 2: Leva para Tela 3 -->
+                                            <button data-navlink="screen-service-db" 
+                                                    class="bg-m3-light-primary dark:bg-m3-dark-primary text-m3-light-on-primary dark:text-m3-dark-on-primary
+                                                           px-4 py-2 text-sm font-medium rounded-full hover:opacity-90 transition-opacity">Gerenciar</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 font-medium">App Web (Front-End)</td>
+                                        <td class="px-6 py-4">
+                                            <span class="inline-flex items-center gap-2 font-medium text-green-500">
+                                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                                Online
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-right">
+                                            <!-- REQUISITO 2: Leva para Tela 4 -->
+                                            <button data-navlink="screen-service-app" 
+                                                    class="bg-m3-light-primary dark:bg-m3-dark-primary text-m3-light-on-primary dark:text-m3-dark-on-primary
+                                                           px-4 py-2 text-sm font-medium rounded-full hover:opacity-90 transition-opacity">Gerenciar</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===================================== -->
+                <!--  TELA 2: DETALHES (API)               -->
+                <!-- ===================================== -->
+                <section id="screen-service-api" class="page-content space-y-6">
+                    <h2 class="text-3xl font-semibold">Gerenciando: API de Pagamentos</h2>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px]">
+                            <h3 class="text-lg font-semibold mb-4">Uso de CPU (API)</h3>
+                            <div class="h-64 sm:h-72 w-full">
+                                <canvas id="cpuChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px]">
+                            <h3 class="text-lg font-semibold mb-4">Uso de Memória (API)</h3>
+                             <div class="h-64 sm:h-72 w-full">
+                                <canvas id="memChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- ===================================== -->
+                <!--  TELA 3: DETALHES (BANCO DE DADOS)    -->
+                <!-- ===================================== -->
+                <section id="screen-service-db" class="page-content space-y-6">
+                    <h2 class="text-3xl font-semibold">Gerenciando: Banco de Dados (Clientes)</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px]">
+                            <h3 class="text-lg font-semibold mb-4">Uso de Disco (BD)</h3>
+                            <div class="h-64 sm:h-72 w-full">
+                                <canvas id="diskChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px]">
+                            <h3 class="text-lg font-semibold mb-4">Conexões (BD)</h3>
+                             <div class="h-64 sm:h-72 w-full">
+                                <canvas id="connChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- ===================================== -->
+                <!--  TELA 4: DETALHES (APP WEB)           -->
+                <!-- ===================================== -->
+                <section id="screen-service-app" class="page-content space-y-6">
+                    <h2 class="text-3xl font-semibold">Gerenciando: App Web (Front-End)</h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px]">
+                            <h3 class="text-lg font-semibold mb-4">Tráfego de Rede (App)</h3>
+                            <div class="h-64 sm:h-72 w-full">
+                                <canvas id="trafficChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px]">
+                            <h3 class="text-lg font-semibold mb-4">Requisições (App)</h3>
+                             <div class="h-64 sm:h-72 w-full">
+                                <canvas id="reqChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===================================== -->
+                <!-- TELA 5: CUSTOS E RELATÓRIOS         -->
+                <!-- ===================================== -->
+                <section id="screen-costs" class="page-content space-y-6">
+                    <h2 class="text-3xl font-semibold">Custos e Relatórios</h2>
+
+                    <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm min-h-[300px]">
+                        <h3 class="text-lg font-semibold mb-4">Detalhamento de Custos por Serviço</h3>
+                         <div class="h-64 sm:h-72 w-full">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container rounded-2xl shadow-sm overflow-hidden">
+                        <h3 class="text-lg font-semibold p-4 sm:p-6">Fatura Detalhada</h3>
+                         <div class="overflow-x-auto">
+                            <table class="w-full text-left min-w-[600px]">
+                                <thead class="border-b border-t border-m3-light-outline/30 dark:border-m3-dark-outline/30">
+                                    <tr>
+                                        <th class="px-6 py-3 text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Serviço</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Recursos</th>
+                                        <th class="px-6 py-3 text-sm font-medium text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Custo Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-m3-light-outline/30 dark:divide-m3-dark-outline/30">
+                                    <tr>
+                                        <td class="px-6 py-4 font-medium">API de Pagamentos</td>
+                                        <td class="px-6 py-4 text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Instância t3.large, 500GB Tráfego</td>
+                                        <td class="px-6 py-4 font-medium">R$ 1.500,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 font-medium">Banco de Dados (Clientes)</td>
+                                        <td class="px-6 py-4 text-m3-light-text-secondary dark:text-m3-dark-text-secondary">RDS m5.xlarge, 1TB Armazenamento</td>
+                                        <td class="px-6 py-4 font-medium">R$ 2.000,00</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 font-medium">App Web (Front-End)</td>
+                                        <td class="px-6 py-4 text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Instância t3.micro, 100GB Tráfego</td>
+                                        <td class="px-6 py-4 font-medium">R$ 850,00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- ===================================== -->
+                <!-- TELA 6: CONFIGURAÇÕES (COM TROCA)     -->
+                <!-- ===================================== -->
+                <section id="screen-settings" class="page-content space-y-6">
+                    <h2 class="text-3xl font-semibold">Configurações</h2>
+                    
+                    <!-- Layout em Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        <!-- Card: Perfil (Atualizado) -->
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm">
+                            <h3 class="text-lg font-semibold mb-4">Perfil do Usuário</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="user_name" class="text-sm text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Nome</label>
+                                    <input type="text" id="user_name" value="Marcus David" 
+                                           class="w-full h-10 px-3 mt-1 bg-m3-light-surface dark:bg-m3-dark-surface 
+                                                  border border-m3-light-outline dark:border-m3-dark-outline rounded-lg text-sm">
+                                </div>
+                                <div>
+                                    <label for="user_email" class="text-sm text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Email</label>
+                                    <input type="email" id="user_email" value="marcus@nuvemcore.com" 
+                                           class="w-full h-10 px-3 mt-1 bg-m3-light-surface dark:bg-m3-dark-surface 
+                                                  border border-m3-light-outline dark:border-m3-dark-outline rounded-lg text-sm">
+                                </div>
+                                <button class="px-4 py-2 text-sm font-medium rounded-full
+                                               border border-m3-light-outline dark:border-m3-dark-outline
+                                               hover:bg-m3-light-surface-container-high dark:hover:bg-m3-dark-surface-container-high transition-colors">
+                                    Alterar Senha
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Card: Aparência (Restaurado) -->
+                        <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm">
+                            <h3 class="text-lg font-semibold mb-4">Aparência</h3>
+                            <div class="space-y-4">
+                                <!-- Toggle Dark Mode -->
+                                <label for="toggle-dark" class="flex items-center justify-between cursor-pointer">
+                                    <span class="font-medium">Modo Escuro (Dark Mode)</span>
+                                    <div class="relative">
+                                        <input type="checkbox" id="toggle-dark" class="sr-only">
+                                        <div class="toggle-bg block bg-gray-200 dark:bg-gray-700 w-11 h-6 rounded-full"></div>
+                                    </div>
+                                </label>
+                                <!-- Toggle Light Mode -->
+                                <label for="toggle-light" class="flex items-center justify-between cursor-pointer">
+                                    <span class="font-medium">Modo Claro (Light Mode)</span>
+                                    <div class="relative">
+                                        <input type="checkbox" id="toggle-light" class="sr-only">
+                                        <div class="toggle-bg block bg-gray-200 dark:bg-gray-700 w-11 h-6 rounded-full"></div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Card: Notificações (Novo) -->
+                        <div class="lg:col-span-2 bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm">
+                            <h3 class="text-lg font-semibold mb-4">Notificações</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <label for="toggle-notify-cost" class="flex items-center justify-between cursor-pointer">
+                                    <span class="font-medium">Receber alertas de custo por e-mail</span>
+                                    <div class="relative">
+                                        <input type="checkbox" id="toggle-notify-cost" class="sr-only" checked>
+                                        <div class="toggle-bg block bg-gray-200 dark:bg-gray-700 w-11 h-6 rounded-full"></div>
+                                    </div>
+                                </label>
+                                <label for="toggle-notify-offline" class="flex items-center justify-between cursor-pointer">
+                                    <span class="font-medium">Receber alertas de serviço offline</span>
+                                    <div class="relative">
+                                        <input type="checkbox" id="toggle-notify-offline" class="sr-only" checked>
+                                        <div class="toggle-bg block bg-gray-200 dark:bg-gray-700 w-11 h-6 rounded-full"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-m3-light-outline/30 dark:border-m3-dark-outline/30">
+                                <button class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium rounded-full
+                                               bg-m3-light-primary dark:bg-m3-dark-primary 
+                                               text-m3-light-on-primary dark:text-m3-dark-on-primary 
+                                               hover:opacity-90 transition-opacity">
+                                    Salvar Preferências
+                                </button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </section>
+
+                <!-- ===================================== -->
+                <!-- TELA 7: ADICIONAR NOVO SERVIÇO        -->
+                <!-- ===================================== -->
+                <section id="screen-add-service" class="page-content space-y-6 max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-semibold">Adicionar Novo Serviço</h2>
+                    
+                    <!-- Card: Detalhes (REQUISITO 3) -->
+                    <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm">
+                        <h3 class="text-lg font-semibold mb-4">Detalhes do Serviço</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="service_name" class="text-sm text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Nome do Serviço</label>
+                                <input type="text" id="service_name" placeholder="Ex: API de Clientes"
+                                       class="w-full h-10 px-3 mt-1 bg-m3-light-surface dark:bg-m3-dark-surface 
+                                              border border-m3-light-outline dark:border-m3-dark-outline rounded-lg text-sm">
+                            </div>
+                            <!-- Dropdown Corrigido -->
+                            <div>
+                                <label for="service_provider" class="text-sm text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Provedor de Nuvem</label>
+                                <select id="service_provider" 
+                                        class="w-full h-10 px-3 mt-1 bg-m3-light-surface dark:bg-m3-dark-surface 
+                                               border border-m3-light-outline dark:border-m3-dark-outline rounded-lg text-sm">
+                                    <option>AWS</option>
+                                    <option>Azure</option>
+                                    <option>Google Cloud</option>
+                                    <option>Outro</option>
+                                </select>
+                            </div>
+                            <!-- Dropdown Corrigido -->
+                             <div>
+                                <label for="service_type" class="text-sm text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Tipo de Recurso</label>
+                                <select id="service_type" 
+                                        class="w-full h-10 px-3 mt-1 bg-m3-light-surface dark:bg-m3-dark-surface 
+                                               border border-m3-light-outline dark:border-m3-dark-outline rounded-lg text-sm">
+                                    <option>Aplicação Web</option>
+                                    <option>Banco de Dados</option>
+                                    <option>Storage</option>
+                                    <option>VM</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Ações -->
+                    <div class="flex flex-col-reverse sm:flex-row items-center gap-3">
+                        <button data-navlink="screen-dashboard"
+                                class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium rounded-full
+                                       border border-m3-light-outline dark:border-m3-dark-outline
+                                       hover:bg-m3-light-surface-container-high dark:hover:bg-m3-dark-surface-container-high transition-colors">
+                            Cancelar
+                        </button>
+                        <button data-navlink="screen-dashboard"
+                                class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium rounded-full
+                                       bg-m3-light-primary dark:bg-m3-dark-primary 
+                                       text-m3-light-on-primary dark:text-m3-dark-on-primary 
+                                       hover:opacity-90 transition-opacity">
+                            Adicionar e Iniciar Monitoramento
+                        </button>
+                    </div>
+
+                </section>
+                
+                <!-- ===================================== -->
+                <!-- TELA 8: SUPORTE (NOVA)                -->
+                <!-- ===================================== -->
+                <section id="screen-support" class="page-content space-y-6 max-w-3xl mx-auto">
+                    <h2 class="text-3xl font-semibold">Suporte</h2>
+                    
+                    <div class="bg-m3-light-surface-container dark:bg-m3-dark-surface-container p-4 sm:p-6 rounded-2xl shadow-sm">
+                        <h3 class="text-lg font-semibold mb-4">Entre em Contato</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Email de Suporte</label>
+                                <p class="text-lg font-medium text-m3-light-primary dark:text-m3-dark-primary mt-1">suporte@nuvemcore.com</p>
+                            </div>
+                            <div class="border-t border-m3-light-outline/30 dark:border-m3-dark-outline/30"></div>
+                            <div>
+                                <label class="text-sm text-m3-light-text-secondary dark:text-m3-dark-text-secondary">Telefone de Contato</label>
+                                <p class="text-lg font-medium mt-1">+55 (11) 4004-1234</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- VARIÁVEIS GLOBAIS ---
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const sidebarOpenBtn = document.getElementById('sidebar-open-btn');
+            const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+            const mainContent = document.getElementById('main-content');
+            
+            const navLinks = document.querySelectorAll('[data-navlink]');
+            const pageContents = document.querySelectorAll('.page-content');
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            
+            // RESTAURADO: const toggleDark = document.getElementById('toggle-dark');
+            // RESTAURADO: const toggleLight = document.getElementById('toggle-light');
+            const toggleDark = document.getElementById('toggle-dark');
+            const toggleLight = document.getElementById('toggle-light');
+            
+            let isSidebarCollapsed = false;
+            // RESTAURADO: let currentTheme = localStorage.getItem('theme') || 'dark';
+            let currentTheme = localStorage.getItem('theme') || 'dark'; // Restaurado
+            
+            // Gráficos (instâncias)
+            let charts = {
+                line: null, donut: null, cpu: null, mem: null, 
+                disk: null, conn: null, traffic: null, req: null, bar: null
+            };
+
+            // --- LÓGICA DE NAVEGAÇÃO ---
+            function showScreen(screenId) {
+                let actualScreenId = screenId;
+                let activeLinkQuery = `[data-navlink="${screenId}"]`; // Query para encontrar o link a destacar
+
+                // --- CORREÇÃO: Redireciona 'Serviços' para o 'Dashboard' ---
+                // (Lógica anterior removida)
+                
+                // --- CORREÇÃO: Destaca 'Serviços' ao ver um detalhe ---
+                if (screenId === 'screen-service-api' || screenId === 'screen-service-db' || screenId === 'screen-service-app') {
+                    activeLinkQuery = `[data-navlink="screen-service-api"]`; // Destaca 'Serviços' (que agora aponta para a API)
+                }
+
+                // Esconde todas as telas
+                pageContents.forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                // Mostra a tela alvo (corrigida)
+                const targetScreen = document.getElementById(actualScreenId); // Usa o ID real
+                if (targetScreen) {
+                    targetScreen.classList.add('active');
+                }
+
+                // Atualiza o link ativo na sidebar (corrigido)
+                sidebarLinks.forEach(link => {
+                    link.classList.remove('active', 'bg-m3-light-surface-container-high', 'dark:bg-m3-dark-surface-container-high');
+                });
+                const activeLink = document.querySelector(activeLinkQuery);
+                if (activeLink) {
+                    activeLink.classList.add('active', 'bg-m3-light-surface-container-high', 'dark:bg-m3-dark-surface-container-high');
+                }
+                
+                if (window.innerWidth < 1024) {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                }
+                mainContent.scrollTop = 0;
+                
+                // Recria os gráficos *necessários* para a tela atual
+                //createCharts(actualScreenId); // Removido parâmetro 'currentTheme' -> Esta linha estava errada na sua versão
+                createCharts(currentTheme, actualScreenId); // Parâmetro 'currentTheme' restaurado -> Esta é a linha correta
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetScreenId = link.dataset.navlink;
+                    showScreen(targetScreenId);
+                });
+            });
+
+            // --- LÓGICA DA SIDEBAR ---
+            if (sidebarOpenBtn) {
+                sidebarOpenBtn.addEventListener('click', () => {
+                    sidebar.classList.remove('-translate-x-full');
+                    sidebarOverlay.classList.remove('hidden');
+                });
+            }
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', () => {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                });
+            }
+            if (sidebarToggleBtn) {
+                sidebarToggleBtn.addEventListener('click', () => {
+                    isSidebarCollapsed = !isSidebarCollapsed;
+                    sidebar.classList.toggle('w-64');
+                    sidebar.classList.toggle('w-20');
+                    
+                    const textsToToggle = document.querySelectorAll('#sidebar-logo, #sidebar-add-text, #sidebar-link-text-1, #sidebar-link-text-2, #sidebar-link-text-3, #sidebar-link-text-4, #sidebar-link-text-5, #sidebar-slogan, #sidebar-toggle-text');
+                    textsToToggle.forEach(el => el.classList.toggle('hidden'));
+                    
+                    document.getElementById('sidebar-toggle-icon').classList.toggle('rotate-180');
+                    
+                    setTimeout(() => {
+                        createCharts(currentTheme, document.querySelector('.page-content.active').id);
+                    }, 300);
+                });
+            }
+
+            // --- LÓGICA DE TROCA DE TEMA (REQUISITO 1) ---
+            // RESTAURADA:
+            function setTheme(theme) { // 'light' ou 'dark'
+                currentTheme = theme;
+                localStorage.setItem('theme', theme);
+                
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    if(toggleDark) toggleDark.checked = true;
+                    if(toggleLight) toggleLight.checked = false;
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    if(toggleDark) toggleDark.checked = false;
+                    if(toggleLight) toggleLight.checked = true;
+                }
+                // Recria os gráficos com as cores do novo tema
+                createCharts(currentTheme, document.querySelector('.page-content.active').id);
+            }
+
+            if(toggleDark) {
+                toggleDark.addEventListener('change', () => {
+                    const newTheme = toggleDark.checked ? 'dark' : 'light';
+                    setTheme(newTheme);
+                    // REQUISITO: Navegar para o Dashboard na troca de tema
+                    showScreen('screen-dashboard');
+                });
+            }
+            if(toggleLight) {
+                toggleLight.addEventListener('change', () => {
+                    const newTheme = toggleLight.checked ? 'light' : 'dark';
+                    setTheme(newTheme);
+                    // REQUISITO: Navegar para o Dashboard na troca de tema
+                    showScreen('screen-dashboard');
+                });
+            }
+            
+            // --- LÓGICA DOS GRÁFICOS (Chart.js) ---
+            
+            function createCharts(theme, screenId) {
+                // Tema agora é dinâmico
+                const isDark = theme === 'dark';
+                const textColor = isDark ? '#CAC4D0' : '#49454F';
+                const gridColor = isDark ? '#49454F' : '#E6E1E5';
+                
+                // Destrói gráficos antigos se existirem
+                Object.values(charts).forEach(chart => {
+                    if (chart) chart.destroy();
+                });
+
+                const chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { color: gridColor, drawOnChartArea: false } },
+                        y: { ticks: { color: textColor }, grid: { color: gridColor, borderDash: [2, 3] }, beginAtZero: true }
+                    }
+                };
+                
+                // === GRÁFICOS DA TELA 1 ===
+                if (screenId === 'screen-dashboard') {
+                    const lineCtx = document.getElementById('lineChart');
+                    if (lineCtx) {
+                        charts.line = new Chart(lineCtx, {
+                            type: 'line',
+                            data: {
+                                labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                                datasets: [{
+                                    data: [120, 150, 140, 160, 180, 170, 200],
+                                    borderColor: '#3B82F6', // Azul Vivo
+                                    fill: true, tension: 0.4
+                                }]
+                            },
+                            options: chartOptions
+                        });
+                    }
+                    const donutCtx = document.getElementById('donutChart');
+                    if (donutCtx) {
+                        charts.donut = new Chart(donutCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['CPU', 'Memória', 'Rede'],
+                                datasets: [{
+                                    data: [45, 35, 20],
+                                    backgroundColor: ['#3B82F6', '#EAB308', '#EF4444'], // Azul, Amarelo, Vermelho
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+                        });
+                    }
+                }
+                
+                // === GRÁFICOS DA TELA 2 (API) ===
+                if (screenId === 'screen-service-api') {
+                    const cpuCtx = document.getElementById('cpuChart');
+                    if (cpuCtx) {
+                        charts.cpu = new Chart(cpuCtx, {
+                            type: 'line', data: { labels: ['10:00', '10:05', '10:10', '10:15'], datasets: [{ data: [22, 25, 24, 30], borderColor: '#3B82F6', tension: 0.3 }] }, options: chartOptions // Azul Vivo
+                        });
+                    }
+                    const memCtx = document.getElementById('memChart');
+                    if (memCtx) {
+                        charts.mem = new Chart(memCtx, {
+                            type: 'line', data: { labels: ['10:00', '10:05', '10:10', '10:15'], datasets: [{ data: [60, 62, 61, 65], borderColor: '#EAB308', tension: 0.3 }] }, options: chartOptions // Amarelo Vivo
+                        });
+                    }
+                }
+
+                // === GRÁFICOS DA TELA 3 (BD) ===
+                if (screenId === 'screen-service-db') {
+                    const diskCtx = document.getElementById('diskChart');
+                    if (diskCtx) {
+                        charts.disk = new Chart(diskCtx, {
+                            type: 'line', data: { labels: ['Seg', 'Ter', 'Qua', 'Qui'], datasets: [{ data: [70, 72, 73, 73], borderColor: '#3B82F6', tension: 0.3 }] }, options: chartOptions // Azul Vivo
+                        });
+                    }
+                    const connCtx = document.getElementById('connChart');
+                    if (connCtx) {
+                        charts.conn = new Chart(connCtx, {
+                            type: 'bar', data: { labels: ['Seg', 'Ter', 'Qua', 'Qui'], datasets: [{ data: [5, 8, 10, 7], backgroundColor: '#3B82F6' }] }, options: chartOptions // Azul Vivo
+                        });
+                    }
+                }
+                
+                // === GRÁFICOS DA TELA 4 (APP) ===
+                 if (screenId === 'screen-service-app') {
+                    const trafficCtx = document.getElementById('trafficChart');
+                    if (trafficCtx) {
+                        charts.traffic = new Chart(trafficCtx, {
+                            type: 'line', data: { labels: ['10:00', '10:05', '10:10', '10:15'], datasets: [{ data: [150, 200, 180, 220], borderColor: '#EAB308', tension: 0.3 }] }, options: chartOptions // Amarelo Vivo
+                        });
+                    }
+                    const reqCtx = document.getElementById('reqChart');
+                    if (reqCtx) {
+                        charts.req = new Chart(reqCtx, {
+                            type: 'bar', data: { labels: ['2xx', '4xx', '5xx'], datasets: [{ data: [1200, 30, 5], backgroundColor: ['#3B82F6', '#EAB308', '#EF4444'] }] }, options: chartOptions // Azul, Amarelo, Vermelho
+                        });
+                    }
+                }
+
+                // === GRÁFICOS DA TELA 5 (Custos) ===
+                if (screenId === 'screen-costs') {
+                    const barCtx = document.getElementById('barChart');
+                    if (barCtx) {
+                        charts.bar = new Chart(barCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: ['API', 'BD', 'App Web'],
+                                datasets: [{ data: [1500, 2000, 850], backgroundColor: ['#3B82F6', '#EAB308', '#EF4444'] }] // Azul, Amarelo, Vermelho
+                            },
+                            options: { ...chartOptions, indexAxis: 'y' }
+                        });
+                    }
+                }
+            }
+
+            // --- INICIALIZAÇÃO ---
+            lucide.createIcons();
+            showScreen('screen-dashboard');
+            // RESTAURADO: setTheme(currentTheme);
+            setTheme(currentTheme);
+        });
+    </script>
+
+</body>
+</html>
