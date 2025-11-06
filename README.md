@@ -55,15 +55,3 @@ Esta seção detalha as responsabilidades de cada membro, conforme a divisão de
 | **Guilherme de Abreu** | Planejamento Inicial & Cronograma | Registro das Partes Interessadas / Gerenciamento de Tempo / Prototipação Inicial |
 | **João Emmanuel** | Controle Financeiro & Análise de Risco | Orçamento do Projeto / Avaliação de Cenários de Projetos / Status Report |
 | **João Victor Melo** | Gestão de Qualidade & Atividades | Plano de Gerenciamento da Qualidade / Estimativas de Custos / Registro das Atividades |
-
-## **📝 Documentação de Projeto (Artefatos de Gestão)**
-
-Os seguintes artefatos de gestão de projeto complementam a entrega.
-
-* $$Avaliação do Desempenho da Equipe $$  
-  $$$$  
-* $$Relatório de Lições Aprendidas $$  
-  $$$$  
-* $$Termo de Aceite do Projeto $$  
-  $$$$  
-  $$(Atenção: Substitua os nomes acima com os links ou nomes dos seus arquivos de documentação final.)
